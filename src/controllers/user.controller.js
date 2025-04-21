@@ -5,7 +5,7 @@ import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 const registerUser = asyncHandler(async (req, res) => {
-  // get user data from frontend ✔
+  // get user data from frontend
   // validate user data - not empty
   // check if user already exists: username, email
   // check for images, check for avatar
@@ -16,10 +16,10 @@ const registerUser = asyncHandler(async (req, res) => {
   // return res
 
   const { fullName, email, username, password } = req.body;
-  console.log("full name ", fullName);
-  console.log("email ", email);
-  console.log("username ", username);
-  console.log("password ", password);
+  // console.log("full name ", fullName);
+  // console.log("email ", email);
+  // console.log("username ", username);
+  // console.log("password ", password);
 
   // if (fullName === "") {
   //   throw new ApiError(400, "Full name is required");
@@ -39,7 +39,12 @@ const registerUser = asyncHandler(async (req, res) => {
   }
   // console.log("Request files: ",req.files);
   const avatarLocalPath = req.files?.avatar[0]?.path; // This avatar is present in the local file system not on the cloudinary
-  const coverImageLocalPath = req.files?.coverImage[0]?.path; // This coverImage is present in the local file system not on the cloudinary
+  // const coverImageLocalPath = req.files?.coverImage[0]?.path; // This coverImage is present in the local file system not on the cloudinary
+
+  let coverImageLocalPath;
+  if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+    coverImageLocalPath = req.files.coverImage[0].path;
+  }
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar is required");
@@ -61,13 +66,28 @@ const registerUser = asyncHandler(async (req, res) => {
     username: username.toLowerCase(),
   });
 
-  const createdUser = await User.findById(user._id, (err, user) => {}).select(
-    "-password -refreshToken"
-  );
+  // in new version of mongoose, it is now not accepting the findById method without a callback function
+  // const createdUser = await User.findById(user._id, (err, user) => {}).select(
+  //   "-password -refreshToken"
+  // );
+
+  const createdUser = await User.findById(user._id)
+    .select("-password -refreshToken")
+    .exec(); // You can use .exec() to explicitly execute the query if you want
 
   if (!createdUser) {
     throw new ApiError(500, "Something went wrong while registering user");
   }
+
+  // return res
+  //   .status(201)
+  //   .json(
+  //     new ApiResponse(
+  //       200,
+  //       { user: createdUser },
+  //       "User registered successfully"
+  //     ).json()
+  //   );
 
   return res
     .status(201)
@@ -76,7 +96,7 @@ const registerUser = asyncHandler(async (req, res) => {
         200,
         { user: createdUser },
         "User registered successfully"
-      ).json()
+      )
     );
 });
 
